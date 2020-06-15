@@ -6,10 +6,12 @@
 #  See the accompanying file LICENSE or http://www.apache.org/licenses/LICENSE-2.0.html
 #
 macro(TARGET_OPENSSL)
-    set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
-    set(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include")
-    # set(OPENSSL_USE_STATIC_LIBS TRUE)
-    unset(OPENSSL_USE_STATIC_LIBS)
+    if (APPLE)
+        set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
+        set(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include")
+        # set(OPENSSL_USE_STATIC_LIBS TRUE)
+        unset(OPENSSL_USE_STATIC_LIBS)
+    endif ()
 
     if (ANDROID)
         set(OPENSSL_INSTALL_DIR ${HIFI_ANDROID_PRECOMPILED}/openssl)
