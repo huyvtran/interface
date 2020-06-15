@@ -6,15 +6,20 @@
 #  See the accompanying file LICENSE or http://www.apache.org/licenses/LICENSE-2.0.html
 #
 macro(TARGET_OPENSSL)
+    set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
+    set(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include")
+    # set(OPENSSL_USE_STATIC_LIBS TRUE)
+    unset(OPENSSL_USE_STATIC_LIBS)
+
     if (ANDROID)
         set(OPENSSL_INSTALL_DIR ${HIFI_ANDROID_PRECOMPILED}/openssl)
         set(OPENSSL_INCLUDE_DIR "${OPENSSL_INSTALL_DIR}/include" CACHE STRING INTERNAL)
         set(OPENSSL_LIBRARIES "${OPENSSL_INSTALL_DIR}/lib/libcrypto.a;${OPENSSL_INSTALL_DIR}/lib/libssl.a" CACHE STRING INTERNAL)
-    else()
+    else ()
     	# using VCPKG for OpenSSL
         find_package(OpenSSL REQUIRED)
-    endif()
+    endif ()
 
-    include_directories(SYSTEM "${OPENSSL_INCLUDE_DIR}")
     target_link_libraries(${TARGET_NAME} ${OPENSSL_LIBRARIES})
+    target_include_directories(${TARGET_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR})
 endmacro()

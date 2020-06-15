@@ -15,15 +15,7 @@ Execute the `Update Shell Profile.command` script that is provided with the inst
 
 ### OpenSSL
 
-Assuming you've installed OpenSSL using the homebrew instructions above, you'll need to set OPENSSL_ROOT_DIR so CMake can find your installations.  
-For OpenSSL installed via homebrew, set:
-
-```bash
-export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2t
-export OPENSSL_INCLUDE_DIR=${OPENSSL_ROOT_DIR}/include
-```
-
-Note that this uses the version from the homebrew formula at the time of this writing, and the version in the path will likely change.
+Tivoli will search for OpenSSL from homebrew at `/usr/local/opt/openssl`.
 
 ### MacOSX 10.11 SDK
 

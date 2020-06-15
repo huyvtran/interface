@@ -226,11 +226,20 @@ endif()
 
     def copyTripletForBuildType(self, triplet):
         print('Copying triplet ' + triplet + ' to have build type ' + self.vcpkgBuildType)
+
         tripletPath = os.path.join(self.path, 'triplets', triplet + '.cmake')
         tripletForBuildTypePath = os.path.join(self.path, 'triplets', self.getTripletWithBuildType(triplet) + '.cmake')
         shutil.copy(tripletPath, tripletForBuildTypePath)
-        with open(tripletForBuildTypePath, "a") as tripletForBuildTypeFile:
-            tripletForBuildTypeFile.write("set(VCPKG_BUILD_TYPE " + self.vcpkgBuildType + ")\n")
+        
+        # with open(tripletForBuildTypePath, "a") as file:
+        #     file.write("set(VCPKG_BUILD_TYPE " + self.vcpkgBuildType + ")\n")
+
+        #     # openssl needs to link dynamically or it'll be incompatible with webrtc
+        #     if platform.system() == "Darwin":
+        #         file.write("if(PORT MATCHES openssl)\n")
+        #         file.write("\tset(BUILD_SHARED_LIBS true)\n")
+        #         file.write("\tset(VCPKG_LIBRARY_LINKAGE dynamic)\n")
+        #         file.write("endif()\n")
 
     def getTripletWithBuildType(self, triplet):
         if (not self.vcpkgBuildType):
