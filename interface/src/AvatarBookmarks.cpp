@@ -18,7 +18,6 @@
 #include <QQmlContext>
 #include <QList>
 #include <QtCore/QThread>
-#include <QtCore/QCborValue>
 
 #include <shared/QtHelpers.h>
 #include <Application.h>
@@ -167,10 +166,7 @@ void AvatarBookmarks::updateAvatarEntities(const QVariantList &avatarEntities) {
             if (propertiesItr != avatarEntityVariantMap.end()) {
                 EntityItemID id = idItr.value().toUuid();
                 newAvatarEntities.insert(id);
-                myAvatar->updateAvatarEntity(
-                    id, 
-                    QCborValue::fromVariant(propertiesItr.value()).toCbor()
-                );
+                myAvatar->updateAvatarEntity(id, QJsonDocument::fromVariant(propertiesItr.value()).toBinaryData());
             }
         }
     }

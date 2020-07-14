@@ -14,7 +14,6 @@
 #include <random>
 
 #include <QtCore/QJsonDocument>
-#include <QtCore/QCborValue>
 
 #include <GLMHelpers.h>
 #include <udt/PacketHeaders.h>
@@ -67,7 +66,7 @@ int OctreeQuery::getBroadcastData(unsigned char* destinationBuffer) {
     QByteArray binaryParametersDocument;
     
     if (!_jsonParameters.isEmpty()) {
-        binaryParametersDocument = QCborValue::fromVariant(_jsonParameters).toCbor();
+        binaryParametersDocument = QJsonDocument(_jsonParameters).toBinaryData();
     }
     
     // write the size of the JSON parameters
@@ -155,10 +154,10 @@ int OctreeQuery::parseData(ReceivedMessage& message) {
         sourceBuffer += binaryParametersBytes;
         
         // grab the parameter object from the packed binary representation of JSON
-        auto newJsonValue = QCborValue::fromCbor(binaryJSONParameters).toJsonValue();
+        auto newJsonDocument = QJsonDocument::fromBinaryData(binaryJSONParameters);
         
         QWriteLocker jsonParameterLocker { &_jsonParametersLock };
-        _jsonParameters = newJsonValue.toObject();
+        _jsonParameters = newJsonDocument.object();
     }
 
     OctreeQueryFlags queryFlags;

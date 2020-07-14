@@ -20,7 +20,6 @@
 #include <glm/gtx/vector_angle.hpp>
 
 #include <QtCore/QTimer>
-#include <QtCore/QCborValue>
 
 #include <shared/QtHelpers.h>
 #include <scripting/HMDScriptingInterface.h>
@@ -1928,8 +1927,8 @@ void MyAvatar::updateAvatarEntity(const QUuid& entityID, const QByteArray& entit
     // NOTE: this is an invokable Script call
     bool changed = false;
     _avatarEntitiesLock.withWriteLock([&] {
-        auto data = QCborValue::fromCbor(entityData).toJsonValue();
-        if (data.isNull() || !data.isObject() || data.toObject().isEmpty()) {
+        auto data = QJsonDocument::fromBinaryData(entityData);
+        if (data.isEmpty() || data.isNull() || !data.isObject() || data.object().isEmpty()) {
             qDebug() << "ERROR!  Trying to update with invalid avatar entity data.  Skipping." << data;
         } else {
             auto itr = _cachedAvatarEntityBlobs.find(entityID);

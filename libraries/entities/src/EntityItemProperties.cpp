@@ -20,7 +20,6 @@
 #include <QHash>
 #include <QObject>
 #include <QtCore/QJsonDocument>
-#include <QtCore/QCborValue>
 #include <QtNetwork/QNetworkReply>
 #include <QtNetwork/QNetworkRequest>
 
@@ -5207,8 +5206,8 @@ void EntityItemProperties::convertToCloneProperties(const EntityItemID& entityID
 bool EntityItemProperties::blobToProperties(QScriptEngine& scriptEngine, const QByteArray& blob, EntityItemProperties& properties) {
     // DANGER: this method is NOT efficient.
     // begin recipe for converting unfortunately-formatted-binary-blob to EntityItemProperties
-    QJsonValue jsonProperties = QCborValue::fromCbor(blob).toJsonValue();
-    if (jsonProperties.isNull() || !jsonProperties.isObject() || jsonProperties.toObject().isEmpty()) {
+    QJsonDocument jsonProperties = QJsonDocument::fromBinaryData(blob);
+    if (jsonProperties.isEmpty() || jsonProperties.isNull() || !jsonProperties.isObject() || jsonProperties.object().isEmpty()) {
         qCDebug(entities) << "bad avatarEntityData json" << QString(blob.toHex());
         return false;
     }
@@ -5236,7 +5235,8 @@ void EntityItemProperties::propertiesToBlob(QScriptEngine& scriptEngine, const Q
             jsonObject["parentID"] = AVATAR_SELF_ID.toString();
         }
     }
-    blob = QCborValue::fromVariant(jsonObject).toCbor();
+    jsonProperties = QJsonDocument(jsonObject);
+    blob = jsonProperties.toBinaryData();
     // end recipe
 }
 

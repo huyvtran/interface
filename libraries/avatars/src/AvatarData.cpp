@@ -22,7 +22,6 @@
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonObject>
-#include <QtCore/QCborValue>
 #include <QtNetwork/QNetworkReply>
 #include <QtNetwork/QNetworkRequest>
 
@@ -2881,20 +2880,21 @@ QByteArray AvatarData::toFrame(const AvatarData& avatar) {
         qCDebug(avatars).noquote() << QJsonDocument(obj).toJson(QJsonDocument::JsonFormat::Indented);
     }
 #endif
-    return QCborValue::fromVariant(root).toCbor();
+    return QJsonDocument(root).toBinaryData();
 }
 
 
 void AvatarData::fromFrame(const QByteArray& frameData, AvatarData& result, bool useFrameSkeleton) {
-    QJsonObject obj = QCborValue::fromCbor(frameData).toJsonValue().toObject();
+    QJsonDocument doc = QJsonDocument::fromBinaryData(frameData);
 
 #ifdef WANT_JSON_DEBUG
     {
+        QJsonObject obj = doc.object();
         obj.remove(JSON_AVATAR_JOINT_ARRAY);
         qCDebug(avatars).noquote() << QJsonDocument(obj).toJson(QJsonDocument::JsonFormat::Indented);
     }
 #endif
-    result.fromJson(obj, useFrameSkeleton);
+    result.fromJson(doc.object(), useFrameSkeleton);
 }
 
 float AvatarData::getBodyYaw() const {
@@ -3193,7 +3193,7 @@ QScriptValue AvatarEntityMapToScriptValue(QScriptEngine* engine, const AvatarEnt
     QScriptValue obj = engine->newObject();
     for (auto entityID : value.keys()) {
         QByteArray entityProperties = value.value(entityID);
-        QJsonValue jsonEntityProperties = QCborValue::fromCbor(entityProperties).toJsonValue();
+        QJsonDocument jsonEntityProperties = QJsonDocument::fromBinaryData(entityProperties);
         if (!jsonEntityProperties.isObject()) {
             qCDebug(avatars) << "bad AvatarEntityData in AvatarEntityMap" << QString(entityProperties.toHex());
         }
@@ -3216,7 +3216,8 @@ void AvatarEntityMapFromScriptValue(const QScriptValue& object, AvatarEntityMap&
 
         QScriptValue scriptEntityProperties = itr.value();
         QVariant variantEntityProperties = scriptEntityProperties.toVariant();
-        QByteArray binaryEntityProperties = QCborValue::fromVariant(variantEntityProperties).toCbor();
+        QJsonDocument jsonEntityProperties = QJsonDocument::fromVariant(variantEntityProperties);
+        QByteArray binaryEntityProperties = jsonEntityProperties.toBinaryData();
 
         value[EntityID] = binaryEntityProperties;
     }
