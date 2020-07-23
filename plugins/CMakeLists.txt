@@ -60,6 +60,9 @@ else()
   message(STATUS "Hifi codec disabled")
 endif()
 
+set(DIR "vorbisCodec")
+add_subdirectory(${DIR})
+
 # example plugins
 # set(DIR "examplePlugin")
 # add_subdirectory(${DIR})
