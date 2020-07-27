@@ -89,7 +89,7 @@ Windows.ScrollingWindow {
 
     Connections {
         target: ScriptDiscoveryService
-        onScriptCountChanged: {
+        function onScriptCountChanged() {
             runningScriptsModel = listModelBuilder.createObject(root);
             refreshTimer.restart();
         }
@@ -174,7 +174,11 @@ Windows.ScrollingWindow {
 
 
     function canEditScript(script) {
-        if ((script === "controllerScripts.js") || (script === "defaultScripts.js")) {
+        if (
+            script === "controllerScripts.js" ||
+            script === "defaultScripts.js" ||
+            script === "tivoli.js"
+        ) {
             return developerMenuEnabled;
         }
 
@@ -397,7 +401,7 @@ Windows.ScrollingWindow {
 
                 Connections {
                     target: treeView.selection
-                    onCurrentIndexChanged: {
+                    function onCurrentIndexChanged() {
                         var path = scriptsModel.data(treeView.selection.currentIndex, 0x100)
                         if (path) {
                             selectedScript.text = path

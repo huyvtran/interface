@@ -24,8 +24,15 @@ interface macos:
         - cd build
 
         # TODO: update cmake to use env vars
-        - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Xcode ..
-        - cmake --build . --target interface --config $BUILD_TYPE
+        - cmake
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+          -DOPENSSL_ROOT_DIR=$OPENSSL_ROOT_DIR
+          -DOPENSSL_INCLUDE_DIR=$OPENSSL_INCLUDE_DIR
+          -DOPENSSL_USE_STATIC_LIBS=$OPENSSL_USE_STATIC_LIBS
+          -G Xcode ..
+        # - cmake --build . --target interface --config $BUILD_TYPE
+        # - cmake --build . --target interface --config $BUILD_TYPE -- -quiet
+        - cmake --build . --target interface --config $BUILD_TYPE | xcpretty
 
         # TODO: source code doesn't show
         - sentry-cli upload-dif --include-sources -p interface interface
@@ -57,7 +64,7 @@ launcher macos:
 
     script:
         - rm -rf launcher # just incase
-        - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@git.tivolicloud.com/tivolicloud-private/launcher
+        - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@git.tivolicloud.com/tivolicloud/launcher
         - mkdir -p launcher/interface
         - mv build/interface/Release/interface.app launcher/interface # interface.app is a folder
 

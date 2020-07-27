@@ -94,7 +94,7 @@ Item {
             permissionPopupBackground.securityOrigin = securityOrigin;
             permissionPopupBackground.feature = feature;
 
-            permissionPopupBackground.visible = true;
+            permissionPopupBackground.visible = feature != WebEngineView.MediaAudioCapture;
         }
 
         onLoadingChanged: {
@@ -116,6 +116,10 @@ Item {
 
         onNewViewRequested: {
             request.openIn(webView);
+        }
+
+        onContextMenuRequested: {
+            request.accepted = true;
         }
 
         HifiControls.WebSpinner { }

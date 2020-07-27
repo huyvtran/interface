@@ -154,10 +154,10 @@ Menu::Menu() {
 #endif
 
     // Edit > Reload All Content and clear caches
-    addActionToQMenuAndActionHash(editMenu, MenuOption::ReloadContent, 0, qApp, SLOT(reloadResourceCaches()));
-    
-    // Edit > Refresh scene 
-    addActionToQMenuAndActionHash(editMenu, MenuOption::RefreshScene, 0, qApp, SLOT(refreshScene()));
+    addActionToQMenuAndActionHash(editMenu, MenuOption::ReloadContent, 0, qApp, SLOT(reloadResourceCaches()));    
+
+    // Edit > Rejoin World 
+    addActionToQMenuAndActionHash(editMenu, MenuOption::Rejoin, Qt::CTRL | Qt::SHIFT | Qt::Key_R, qApp, SLOT(rejoin()));
 
     // Edit > Reload Avatar
 
@@ -289,7 +289,7 @@ Menu::Menu() {
     });
 
     // Settings > Graphics...
-    action = addActionToQMenuAndActionHash(settingsMenu, "Performance...");
+    action = addActionToQMenuAndActionHash(settingsMenu, "Graphics...");
     connect(action, &QAction::triggered, [] {
         auto tablet = DependencyManager::get<TabletScriptingInterface>()->getTablet("com.highfidelity.interface.tablet.system");
         auto hmd = DependencyManager::get<HMDScriptingInterface>();
@@ -314,7 +314,7 @@ Menu::Menu() {
     //    // Refresh entire scene if custom shaders were disabled in settings at startup
     //    if (TextureCache::wasLaunchedWithShadersDisabled()) {
     //        TextureCache::setWasLaunchedWithShadersDisabled(false);
-    //        qApp->refreshScene();
+    //        
     //    }
     //    else { // do a quick refresh of the shaders
     //        ShaderCache::instance().refreshAll(); // only refresh the shader cache
@@ -361,10 +361,10 @@ Menu::Menu() {
     MenuWrapper* tivoliOptionsMenu = developerMenu->addMenu("Tivoli Options");
 
     addCheckableActionToQMenuAndActionHash(tivoliOptionsMenu, MenuOption::StopRendering);
-   /* action = addCheckableActionToQMenuAndActionHash(tivoliOptionsMenu, MenuOption::LoadCompleteEntityTree, 0,
+    action = addCheckableActionToQMenuAndActionHash(tivoliOptionsMenu, MenuOption::LoadCompleteEntityTree, 0,
                                                     qApp->getLoadCompleteEntityTreeSetting());
  
-    action = addCheckableActionToQMenuAndActionHash(tivoliOptionsMenu, MenuOption::BypassPrioritySorting, 0,
+    /* action = addCheckableActionToQMenuAndActionHash(tivoliOptionsMenu, MenuOption::BypassPrioritySorting, 0,
         qApp->getForcedBypassPrioritySorting());*/
     
 
@@ -474,7 +474,7 @@ Menu::Menu() {
     MenuWrapper* textureMenu = renderOptionsMenu->addMenu(MenuOption::RenderMaxTextureMemory);
     QActionGroup* textureGroup = new QActionGroup(textureMenu);
     textureGroup->setExclusive(true);
-    textureGroup->addAction(addCheckableActionToQMenuAndActionHash(textureMenu, MenuOption::RenderMaxTextureAutomatic, 0, true));
+    textureGroup->addAction(addCheckableActionToQMenuAndActionHash(textureMenu, MenuOption::RenderMaxTextureAutomatic, 0, false));
     textureGroup->addAction(addCheckableActionToQMenuAndActionHash(textureMenu, MenuOption::RenderMaxTexture4MB, 0, false));
     textureGroup->addAction(addCheckableActionToQMenuAndActionHash(textureMenu, MenuOption::RenderMaxTexture64MB, 0, false));
     textureGroup->addAction(addCheckableActionToQMenuAndActionHash(textureMenu, MenuOption::RenderMaxTexture256MB, 0, false));
@@ -483,7 +483,7 @@ Menu::Menu() {
     textureGroup->addAction(addCheckableActionToQMenuAndActionHash(textureMenu, MenuOption::RenderMaxTexture2048MB, 0, false));
     textureGroup->addAction(addCheckableActionToQMenuAndActionHash(textureMenu, MenuOption::RenderMaxTexture4096MB, 0, false));
     textureGroup->addAction(addCheckableActionToQMenuAndActionHash(textureMenu, MenuOption::RenderMaxTexture6144MB, 0, false));
-    textureGroup->addAction(addCheckableActionToQMenuAndActionHash(textureMenu, MenuOption::RenderMaxTexture8192MB, 0, false));
+    textureGroup->addAction(addCheckableActionToQMenuAndActionHash(textureMenu, MenuOption::RenderMaxTexture8192MB, 0, true));
     connect(textureGroup, &QActionGroup::triggered, [textureGroup] {
         auto checked = textureGroup->checkedAction();
         auto text = checked->text();
@@ -558,7 +558,6 @@ Menu::Menu() {
     action = addCheckableActionToQMenuAndActionHash(renderOptionsMenu, MenuOption::ForceEverythingUnlit, 0, false);
     connect(action, &QAction::triggered, [action] {
         TextureCache::setEverythingUnlit(action->isChecked());
-        //qApp->refreshScene();
 
     });
     // Developer > Assets >>>
@@ -864,7 +863,7 @@ Menu::Menu() {
     // Help > Discord Server
     action = addActionToQMenuAndActionHash(helpMenu, "Discord Server");
     connect(action, &QAction::triggered, qApp, [] {
-        QDesktopServices::openUrl(QUrl("https://alpha.tivolicloud.com/discord"));
+        QDesktopServices::openUrl(QUrl("https://tivolicloud.com/discord"));
     });
 
     // Help > JavaScript API Reference

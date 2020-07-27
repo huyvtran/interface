@@ -27,6 +27,7 @@ extern const QString REDIRECT_HIFI_ADDRESS;
 extern const QString DEFAULT_HOME_ADDRESS;
 
 const QString SANDBOX_HIFI_ADDRESS = "hifi://localhost";
+const QString EMPTY_HIFI_ADDRESS = "file://";
 const QString INDEX_PATH = "/";
 
 const QString GET_PLACE = "/api/v1/places/%1";
@@ -48,6 +49,12 @@ const QString GET_PLACE = "/api/v1/places/%1";
  *
  * @property {Uuid} domainID - A UUID uniquely identifying the domain you're visiting. Is {@link Uuid(0)|Uuid.NULL} if you're not
  *     connected to the domain or are in a serverless domain.
+ *     <em>Read-only.</em>
+ * @property {string} worldName - The name of the world you're connected to.
+ *     <em>Read-only.</em>
+ * @property {string} worldAuthor - The author's username of the world you're connected to.
+ *     <em>Read-only.</em>
+ * @property {string} worldDescription - The description of the world you're connected to.
  *     <em>Read-only.</em>
  * @property {string} hostname - The name of the domain for your current metaverse address (e.g., <code>"DomainName"</code>,
  *     <code>localhost</code>, or an IP address). Is blank if you're in a serverless domain.
@@ -82,6 +89,12 @@ const QString GET_PLACE = "/api/v1/places/%1";
  *
  * @property {Uuid} domainID - A UUID uniquely identifying the domain you're visiting. Is {@link Uuid(0)|Uuid.NULL} if you're not
  *     connected to the domain or are in a serverless domain.
+ *     <em>Read-only.</em>
+ * @property {string} worldName - The name of the world you're connected to.
+ *     <em>Read-only.</em>
+ * @property {string} worldAuthor - The author's username of the world you're connected to.
+ *     <em>Read-only.</em>
+ * @property {string} worldDescription - The description of the world you're connected to.
  *     <em>Read-only.</em>
  * @property {string} hostname - The name of the domain for your current metaverse address (e.g., <code>"DomainName"</code>,
  *     <code>localhost</code>, or an IP address). Is blank if you're in a serverless domain.
@@ -138,6 +151,9 @@ class AddressManager : public QObject, public Dependency {
     Q_PROPERTY(QString pathname READ currentPath)
     Q_PROPERTY(QString placename READ getPlaceName)
     Q_PROPERTY(QString domainID READ getDomainID)
+    Q_PROPERTY(QString worldName READ getDomainLabel)
+    Q_PROPERTY(QString worldAuthor READ getDomainAuthor)
+    Q_PROPERTY(QString worldDescription READ getDomainDescription)
 public:
     using PositionGetter = std::function<glm::vec3()>;
     using OrientationGetter = std::function<glm::quat()>;
@@ -211,7 +227,8 @@ public:
         Internal,
         AttemptedRefresh,
         Suggestions,
-        VisitUserFromPAL
+        VisitUserFromPAL,
+        ForceReload
     };
 
     bool isConnected();
@@ -299,6 +316,12 @@ public slots:
      */
     void goToLocalSandbox(QString path = "", LookupTrigger trigger = LookupTrigger::StartupFromSettings) {
         handleUrl(SANDBOX_HIFI_ADDRESS + path, trigger); }
+
+    /**jsdoc
+     * Reload the currently open world, the same as leaving the world for another and then returning.
+     * @function location.rejoin
+     */
+    void rejoin();
 
     /**jsdoc
      * Takes you to the default "welcome" metaverse address.

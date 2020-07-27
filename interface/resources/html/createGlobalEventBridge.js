@@ -11,56 +11,113 @@
 // Stick a EventBridge object in the global namespace.
 var EventBridge;
 (function () {
-    // the TempEventBridge class queues up emitWebEvent messages and executes them when the real EventBridge is ready.
-    // Similarly, it holds all scriptEventReceived callbacks, and hooks them up to the real EventBridge.
-    function TempEventBridge() {
-        var self = this;
-        this._callbacks = [];
-        this._messages = [];
-        this.scriptEventReceived = {
-            connect: function (callback) {
-                self._callbacks.push(callback);
-            }
-        };
-        this.emitWebEvent = function (message) {
-            self._messages.push(message);
-        };
-    };
+	// the TempEventBridge class queues up emitWebEvent messages and executes them when the real EventBridge is ready.
+	// Similarly, it holds all scriptEventReceived callbacks, and hooks them up to the real EventBridge.
+	class TempEventBridge {
+		_callbacks = [];
+		_messages = [];
 
-    EventBridge = new TempEventBridge();
+		scriptEventReceived = {
+			connect: callback => {
+				this._callbacks.push(callback);
+			},
+		};
 
-    var webChannel = new QWebChannel(qt.webChannelTransport, function (channel) {
-        // replace the TempEventBridge with the real one.
-        var tempEventBridge = EventBridge;
-        EventBridge = channel.objects.eventBridge;
-        
-        // To be able to update the state of the output device selection for every element added to the DOM
-        // we need to listen to events that might precede the addition of this elements.
-        // A more robust hack will be to add a setInterval that look for DOM changes every 100-300 ms (low performance?)
-        
-        window.addEventListener("load",function(event) {
-            setTimeout(function() { 
-                EventBridge.forceHtmlAudioOutputDeviceUpdate();
-            }, 1200);
-        }, false);
-        
-        document.addEventListener("click",function(){
-            setTimeout(function() { 
-                EventBridge.forceHtmlAudioOutputDeviceUpdate();
-            }, 1200);
-        }, false);
-        
-        document.addEventListener("change",function(){
-            setTimeout(function() { 
-                EventBridge.forceHtmlAudioOutputDeviceUpdate();
-            }, 1200);
-        }, false);
-        
-        tempEventBridge._callbacks.forEach(function (callback) {
-            EventBridge.scriptEventReceived.connect(callback);
-        });
-        tempEventBridge._messages.forEach(function (message) {
-            EventBridge.emitWebEvent(message);
-        });
-    });
+		emitWebEvent = message => {
+			this._messages.push(message);
+		};
+	}
+
+	EventBridge = new TempEventBridge();
+
+	new QWebChannel(qt.webChannelTransport, channel => {
+		// replace the TempEventBridge with the real one.
+		const tempEventBridge = EventBridge;
+		EventBridge = channel.objects.eventBridge;
+
+		if (EventBridge.audioOutputDeviceChanged) {
+			EventBridge.audioOutputDeviceChanged.connect(async deviceName => {
+				deviceName = deviceName.trim().toLowerCase();
+				if (deviceName == "") deviceName = "default";
+
+				await navigator.mediaDevices
+					.getUserMedia({ audio: true, video: false })
+					.catch(err => {
+						console.error(
+							"Error getting media devices" +
+								err.name +
+								": " +
+								err.message,
+						);
+					});
+
+				const devices = (
+					await navigator.mediaDevices
+						.enumerateDevices()
+						.catch(err => {
+							console.error(
+								"Error getting user media" +
+									err.name +
+									": " +
+									err.message,
+							);
+						})
+				).filter(device => device.kind == "audiooutput");
+
+				const device =
+					deviceName == "default"
+						? devices.find(device => device.deviceId == "default")
+						: devices.find(
+								device =>
+									deviceName ==
+									device.label
+										.replace(
+											/\([0-9a-f]{4}:[0-9a-f]{4}\)/gi,
+											"",
+										)
+										.trim()
+										.toLowerCase(),
+						  ) ||
+						  devices.find(device => device.deviceId == "default");
+
+				if (device == null) {
+					console.error("Failed to change HTML audio output device");
+					return;
+				} else {
+					console.log(
+						"Changing HTML audio output to device " + deviceName,
+					);
+				}
+
+				for (const video of document.getElementsByTagName("video")) {
+					video.setSinkId(device.deviceId);
+				}
+				for (const audio of document.getElementsByTagName("audio")) {
+					audio.setSinkId(device.deviceId);
+				}
+			});
+		}
+
+		new WebKitMutationObserver(mutations => {
+			mutations.forEach(mutation => {
+				for (const node of mutation.addedNodes) {
+					if (node.nodeName == "VIDEO" || node.nodeName == "AUDIO")
+						EventBridge.forceHtmlAudioOutputDeviceUpdate();
+				}
+			});
+		}).observe(document.body, {
+			childList: true,
+		});
+
+		window.addEventListener("DOMContentLoaded", () => {
+			EventBridge.forceHtmlAudioOutputDeviceUpdate();
+		});
+
+		tempEventBridge._callbacks.forEach(callback => {
+			EventBridge.scriptEventReceived.connect(callback);
+		});
+		tempEventBridge._messages.forEach(message => {
+			EventBridge.emitWebEvent(message);
+		});
+	});
 })();

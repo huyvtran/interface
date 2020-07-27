@@ -40,20 +40,11 @@ Item {
             spacing: 0
 
             HifiStylesUit.RobotoRegular {
-                text: "PERFORMANCE SETTINGS"
+                text: "GRAPHICS SETTINGS"
                 Layout.maximumWidth: parent.width
                 height: 30
                 size: 16
                 color: "#FFFFFF"
-            }
-
-            HifiStylesUit.RobotoRegular {
-                text: "Tivoli will reset to \"High\" when restarting!\nThe performance system needs redesigning."
-                Layout.maximumWidth: parent.width
-                Layout.topMargin: 10
-                height: 30
-                size: 16
-                color: "#B33A3A"
             }
 
             ColumnLayout {
@@ -287,16 +278,20 @@ Item {
                         id: refreshRateModel
 
                         ListElement {
-                            text: "20 fps"
+                            text: "20 FPS"
                             refreshRatePreset: 0 // RefreshRateProfile::ECO
                         }
                         ListElement {
-                            text: "30 fps"
+                            text: "30 FPS"
                             refreshRatePreset: 1 // RefreshRateProfile::INTERACTIVE
                         }
                         ListElement {
-                            text: "60 fps"
+                            text: "60 FPS"
                             refreshRatePreset: 2 // RefreshRateProfile::REALTIME
+                        }
+                        ListElement {
+                            text: "Unlimited FPS"
+                            refreshRatePreset: 3 // RefreshRateProfile::UNLIMITED
                         }
                     }
                 
@@ -317,8 +312,10 @@ Item {
                                 refreshRateDropdown.currentIndex = 0;
                             } else if (Performance.getRefreshRateProfile() === 1) {
                                 refreshRateDropdown.currentIndex = 1;
-                            } else {
+                            } else if (Performance.getRefreshRateProfile() === 2) {
                                 refreshRateDropdown.currentIndex = 2;
+                            } else {
+                                refreshRateDropdown.currentIndex = 3;
                             }
                         }
 
@@ -353,13 +350,13 @@ Item {
                         id: resolutionScaleSlider
                         // enabled: performanceCustom.checked
                         anchors.left: resolutionHeader.right
-                        anchors.leftMargin: 57
+                        anchors.leftMargin: 20
                         anchors.top: parent.top
-                        width: 150 
+                        width: 280
                         height: parent.height
                         colorScheme: hifi.colorSchemes.dark
                         minimumValue: 0.1
-                        maximumValue: 5.0
+                        maximumValue: 4.0
                         stepSize: 0.1
                         value: Render.viewportResolutionScale
                         live: true
@@ -371,6 +368,9 @@ Item {
                         }
 
                         onValueChanged: {
+                            if (value > 1) {
+                                value = Math.round(value * 2) / 2
+                            }
                             updateResolutionScale(value);
                         }
                         onPressedChanged: {
@@ -381,7 +381,7 @@ Item {
                     }
 
                     HifiStylesUit.RobotoRegular {
-                        text: "\n\n\n\n\nWarning - Sampling over 1.0 will\ndramatically lower your frame rate."
+                        text: "\n\n\nWarning - Sampling over 1.0 will lower your frame rate!"
                         Layout.maximumWidth: parent.width
                         anchors.left: parent.left
                         anchors.top: parent.top

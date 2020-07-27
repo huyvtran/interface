@@ -16,7 +16,7 @@
 				<td>
 					<img
 						class="avatar-image"
-						src="https://alpha.tivolicloud.com/api/user/_/image"
+						src="https://tivolicloud.com/api/user/_/image"
 					/>
 				</td>
 				<td style="padding-left: 16px;">
@@ -30,6 +30,17 @@
 					>
 						<mat-icon>link</mat-icon>
 						Update avatar URL
+					</button>
+
+					<div style="padding: 4px 0;"></div>
+
+					<button
+						mat-flat-button
+						color="primary"
+						(click)="onAvatarFromTivoliFiles()"
+					>
+						<mat-icon>folder</mat-icon>
+						Avatar from my Tivoli files
 					</button>
 
 					<div style="padding: 4px 0;"></div>

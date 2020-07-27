@@ -64,12 +64,12 @@ launcher windows:
         - interface windows
 
     variables:
-        CSC_LINK: C:\Users\maki\tivoli-cloud-vr.ci.p12
+        CSC_LINK: C:\Users\maki\tivoli-cloud-vr.ci.pfx
         # CSC_KEY_PASSWORD
 
     script:
         # - Remove-Item -Recurse -Force -ErrorAction Ignore launcher # just incase
-        - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@git.tivolicloud.com/tivolicloud-private/launcher
+        - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@git.tivolicloud.com/tivolicloud/launcher
         - mv build/interface/Release launcher/interface
 
         # TODO: this needs changing

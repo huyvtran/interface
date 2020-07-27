@@ -329,7 +329,7 @@ static const int ENTITY_SERVER_ADDED_TIMEOUT = 5000;
 static const int ENTITY_SERVER_CONNECTION_TIMEOUT = 5000;
 static const int WATCHDOG_TIMER_TIMEOUT = 100;
 
-static const float INITIAL_QUERY_RADIUS = 10.0f;  // priority radius for entities before physics enabled
+static const float INITIAL_QUERY_RADIUS = 300.0f;  // priority radius for entities before physics enabled
 
 static const QString DESKTOP_LOCATION = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
 
@@ -338,7 +338,6 @@ Setting::Handle<int> maxOctreePacketsPerSecond{"maxOctreePPS", DEFAULT_MAX_OCTRE
 Setting::Handle<bool> loginDialogPoppedUp{"loginDialogPoppedUp", false};
 
 static const QUrl AVATAR_INPUTS_BAR_QML = PathUtils::qmlUrl("AvatarInputsBar.qml");
-static const QUrl MIC_BAR_APPLICATION_QML = PathUtils::qmlUrl("hifi/audio/MicBarApplication.qml");
 static const QUrl BUBBLE_ICON_QML = PathUtils::qmlUrl("BubbleIcon.qml");
 
 static const QString STANDARD_TO_ACTION_MAPPING_NAME = "Standard to Action";
@@ -757,8 +756,8 @@ bool setupEssentials(int& argc, char** argv, bool runningMarkerExisted) {
     const char* portStr = getCmdOption(argc, constArgv, "--listenPort");
     const int listenPort = portStr ? atoi(portStr) : INVALID_PORT;
 
-    static const auto SUPPRESS_SETTINGS_RESET = "--suppress-settings-reset";
-    bool suppressPrompt = cmdOptionExists(argc, const_cast<const char**>(argv), SUPPRESS_SETTINGS_RESET);
+    // static const auto SUPPRESS_SETTINGS_RESET = "--suppress-settings-reset";
+    // bool suppressPrompt = cmdOptionExists(argc, const_cast<const char**>(argv), SUPPRESS_SETTINGS_RESET);
 
     // set the OCULUS_STORE property so the oculus plugin can know if we ran from the Oculus Store
     static const auto OCULUS_STORE_ARG = "--oculus-store";
@@ -782,7 +781,8 @@ bool setupEssentials(int& argc, char** argv, bool runningMarkerExisted) {
 
     bool previousSessionCrashed { false };
     if (!inTestMode) {
-        previousSessionCrashed = CrashRecoveryHandler::checkForResetSettings(runningMarkerExisted, suppressPrompt);
+        // previousSessionCrashed = CrashRecoveryHandler::checkForResetSettings(runningMarkerExisted, suppressPrompt);
+        previousSessionCrashed = CrashRecoveryHandler::checkForResetSettings(runningMarkerExisted, true);
     }
 
     // get dir to use for cache
@@ -1351,6 +1351,10 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer, bo
     connect(accountManager.data(), &AccountManager::authRequired, dialogsManager.data(), &DialogsManager::showLoginDialog);
 #endif
     connect(accountManager.data(), &AccountManager::usernameChanged, this, &Application::updateWindowTitle);
+    connect(accountManager.data(), &AccountManager::usernameChanged, this, [&](const QString username){
+        auto avatarManager = DependencyManager::get<AvatarManager>();
+        if (avatarManager) avatarManager->getMyAvatar()->setDisplayName(username);
+    });
 
     // use our MyAvatar position and quat for address manager path
     addressManager->setPositionGetter([] {
@@ -1573,12 +1577,12 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer, bo
     connect(offscreenUi.data(), &OffscreenUi::keyboardFocusActive, [this]() {
 #if !defined(Q_OS_ANDROID) && !defined(DISABLE_QML)
         // Do not show login dialog if requested not to on the command line
-        QString hifiNoLoginCommandLineKey = QString("--").append(HIFI_NO_LOGIN_COMMAND_LINE_KEY);
-        int index = arguments().indexOf(hifiNoLoginCommandLineKey);
-        if (index != -1) {
+        // QString hifiNoLoginCommandLineKey = QString("--").append(HIFI_NO_LOGIN_COMMAND_LINE_KEY);
+        // int index = arguments().indexOf(hifiNoLoginCommandLineKey);
+        // if (index != -1) {
             resumeAfterLoginDialogActionTaken();
             return;
-        }
+        // }
 
         // TIVOLI showLoginScreen();
 #else
@@ -1997,23 +2001,23 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer, bo
 
 
     // If launched from Steam, let it handle updates
-    const QString HIFI_NO_UPDATER_COMMAND_LINE_KEY = "--no-updater";
-    bool noUpdater = true; // CPM arguments().indexOf(HIFI_NO_UPDATER_COMMAND_LINE_KEY) != -1;
-    bool buildCanUpdate = BuildInfo::BUILD_TYPE == BuildInfo::BuildType::Stable
-        || BuildInfo::BUILD_TYPE == BuildInfo::BuildType::Master;
-    if (!noUpdater && buildCanUpdate) {
-        constexpr auto INSTALLER_TYPE_CLIENT_ONLY = "client_only";
+    // const QString HIFI_NO_UPDATER_COMMAND_LINE_KEY = "--no-updater";
+    // bool noUpdater = arguments().indexOf(HIFI_NO_UPDATER_COMMAND_LINE_KEY) != -1;
+    // bool buildCanUpdate = BuildInfo::BUILD_TYPE == BuildInfo::BuildType::Stable
+    //     || BuildInfo::BUILD_TYPE == BuildInfo::BuildType::Master;
+    // if (!noUpdater && buildCanUpdate) {
+    //     constexpr auto INSTALLER_TYPE_CLIENT_ONLY = "client_only";
 
-        auto applicationUpdater = DependencyManager::set<AutoUpdater>();
+    //     auto applicationUpdater = DependencyManager::set<AutoUpdater>();
 
-        AutoUpdater::InstallerType type = installerType == INSTALLER_TYPE_CLIENT_ONLY
-            ? AutoUpdater::InstallerType::CLIENT_ONLY : AutoUpdater::InstallerType::FULL;
+    //     AutoUpdater::InstallerType type = installerType == INSTALLER_TYPE_CLIENT_ONLY
+    //         ? AutoUpdater::InstallerType::CLIENT_ONLY : AutoUpdater::InstallerType::FULL;
 
-        applicationUpdater->setInstallerType(type);
-        applicationUpdater->setInstallerCampaign(installerCampaign);
-        connect(applicationUpdater.data(), &AutoUpdater::newVersionIsAvailable, dialogsManager.data(), &DialogsManager::showUpdateDialog);
-        applicationUpdater->checkForUpdate();
-    }
+    //     applicationUpdater->setInstallerType(type);
+    //     applicationUpdater->setInstallerCampaign(installerCampaign);
+    //     connect(applicationUpdater.data(), &AutoUpdater::newVersionIsAvailable, dialogsManager.data(), &DialogsManager::showUpdateDialog);
+    //     applicationUpdater->checkForUpdate();
+    // }
 
     Menu::getInstance()->setIsOptionChecked(MenuOption::ActionMotorControl, true);
     Menu::getInstance()->setIsOptionChecked(
@@ -2630,8 +2634,10 @@ QString Application::getUserAgent() {
         return userAgent;
     }
 
-    QString userAgent = "Mozilla/5.0 (HighFidelityInterface/" + BuildInfo::VERSION + "; "
-        + QSysInfo::productType() + " " + QSysInfo::productVersion() + ")";
+    QString userAgent = (
+        "TivoliCloudVR/" + 
+        (BuildInfo::BUILD_TYPE == BuildInfo::BuildType::Stable ? BuildInfo::VERSION : "dev")
+    );
 
     auto formatPluginName = [](QString name) -> QString { return name.trimmed().replace(" ", "-");  };
 
@@ -3066,6 +3072,9 @@ void Application::initializeGL() {
         // Fixes "seccomp-bpf failure in syscall 0230" on Arch Linux
         chromiumFlags << "--disable-seccomp-filter-sandbox";
     #endif
+
+    // Enable autoplay
+    chromiumFlags << "--autoplay-policy=no-user-gesture-required";
 
     // Enable this for debugging chromium
     //chromiumFlags << "--enable-logging" << "--log-level=0" << "--v=1";
@@ -4070,7 +4079,7 @@ std::map<QString, QString> Application::prepareServerlessDomainContents(QUrl dom
     bool success = tmpTree->readFromByteArray(domainURL.toString(), data);
     if (success) {
         tmpTree->reaverageOctreeElements();
-        tmpTree->sendEntities(&_entityEditSender, getEntities()->getTree(), 0, 0, 0);
+        tmpTree->sendEntities(&_entityEditSender, getEntities()->getTree(), "domain", 0, 0, 0);
     }
     std::map<QString, QString> namedPaths = tmpTree->getNamedPaths();
 
@@ -4365,6 +4374,23 @@ bool Application::eventFilter(QObject* object, QEvent* event) {
         }
     }
 
+    // for overview overlay
+    auto jsConsole = DependencyManager::get<StandAloneJSConsole>();
+    if (
+        (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease) &&
+        hasFocus() && OffscreenQmlSurface::viewportFocused &&
+        (jsConsole ? !jsConsole->getActive() : true)
+    ) {
+        QKeyEvent* key = static_cast<QKeyEvent*>(event);
+        
+        if (key->key() == Qt::Key_Tab) {
+            if (key->isAutoRepeat() == false) {
+                _controllerScriptingInterface->tabKeyEvent(event->type() == QEvent::KeyPress);
+            }
+            return true; 
+        }
+    }
+
     return false;
 }
 
@@ -4495,6 +4521,7 @@ void Application::keyPressEvent(QKeyEvent* event) {
                 break;
 
             case Qt::Key_R:
+                if (isShifted) break;
                 if (isControlOrCommand && !event->isAutoRepeat()) {
                     DependencyManager::get<ScriptEngines>()->reloadAllScripts();
                     getOffscreenUI()->clearCache();
@@ -5416,7 +5443,7 @@ void Application::loadSettings() {
     }
 
     bool isFirstPerson = false;
-    if (arguments().contains("--no-launcher")) {
+    // if (arguments().contains("--no-launcher")) {
         auto displayPlugins = pluginManager->getDisplayPlugins();
         for (auto& plugin : displayPlugins) {
             if (!plugin->isHmd()) {
@@ -5428,32 +5455,32 @@ void Application::loadSettings() {
             }
         }
         isFirstPerson = (qApp->isHMDMode());
-    } else {
-        if (_firstRun.get()) {
-            // If this is our first run, and no preferred devices were set, default to
-            // an HMD device if available.
-            auto displayPlugins = pluginManager->getDisplayPlugins();
-            for (auto& plugin : displayPlugins) {
-                if (plugin->isHmd()) {
-                    if (auto action = menu->getActionForOption(plugin->getName())) {
-                        action->setChecked(true);
-                        action->trigger();
-                        break;
-                    }
-                }
-            }
-            isFirstPerson = (qApp->isHMDMode());
-        } else {
-            // if this is not the first run, the camera will be initialized differently depending on user settings
-            if (qApp->isHMDMode()) {
-                // if the HMD is active, use first-person camera, unless the appropriate setting is checked
-                isFirstPerson = menu->isOptionChecked(MenuOption::FirstPersonHMD);
-            } else {
-                // if HMD is not active, only use first person if the menu option is checked
-                isFirstPerson = menu->isOptionChecked(MenuOption::FirstPersonLookAt);
-            }
-        }
-    }
+    // } else {
+    //     if (_firstRun.get()) {
+    //         // If this is our first run, and no preferred devices were set, default to
+    //         // an HMD device if available.
+    //         auto displayPlugins = pluginManager->getDisplayPlugins();
+    //         for (auto& plugin : displayPlugins) {
+    //             if (plugin->isHmd()) {
+    //                 if (auto action = menu->getActionForOption(plugin->getName())) {
+    //                     action->setChecked(true);
+    //                     action->trigger();
+    //                     break;
+    //                 }
+    //             }
+    //         }
+    //         isFirstPerson = (qApp->isHMDMode());
+    //     } else {
+    //         // if this is not the first run, the camera will be initialized differently depending on user settings
+    //         if (qApp->isHMDMode()) {
+    //             // if the HMD is active, use first-person camera, unless the appropriate setting is checked
+    //             isFirstPerson = menu->isOptionChecked(MenuOption::FirstPersonHMD);
+    //         } else {
+    //             // if HMD is not active, only use first person if the menu option is checked
+    //             isFirstPerson = menu->isOptionChecked(MenuOption::FirstPersonLookAt);
+    //         }
+    //     }
+    // }
 
     // Load settings of the RenderScritpingInterface
     // Do that explicitely before being used
@@ -5514,7 +5541,7 @@ bool Application::importEntities(const QString& urlOrFilename, const bool isObse
 
         // FIXME: readFromURL() can take over the main event loop which may cause problems, especially if downloading the JSON 
         // from the Web.
-        success = _entityClipboard->readFromURL(urlOrFilename, isObservable, callerId);
+        success = _entityClipboard->readFromURL(urlOrFilename, isObservable, callerId, true);
         if (success) {
             _entityClipboard->reaverageOctreeElements();
         }
@@ -5522,8 +5549,8 @@ bool Application::importEntities(const QString& urlOrFilename, const bool isObse
     return success;
 }
 
-QVector<EntityItemID> Application::pasteEntities(float x, float y, float z) {
-    return _entityClipboard->sendEntities(&_entityEditSender, getEntities()->getTree(), x, y, z);
+QVector<EntityItemID> Application::pasteEntities(const QString& entityHostType, float x, float y, float z) {
+    return _entityClipboard->sendEntities(&_entityEditSender, getEntities()->getTree(), entityHostType, x, y, z);
 }
 
 void Application::init() {
@@ -5964,49 +5991,9 @@ void Application::reloadResourceCaches() {
 }
 
 
-// Reload a domain without clearing the caches.
-void Application::refreshScene() { 
-    resetPhysicsReadyInformation();
-
-    // Query the octree to refresh everything in view
-    _queryExpiry = SteadyClock::now();
-    _octreeQuery.incrementConnectionID();
-
-    QJsonObject queryJSONParameters;
-    QJsonObject queryFlags;
-    queryFlags["includeDescendants"] = true;
-    queryFlags["includeAncestors"] = true;
-    queryJSONParameters["flags"] = queryFlags;
-    queryOctree(
-        NodeType::EntityServer,
-        PacketType::EntityQuery,
-        queryJSONParameters
-    );
-
-    getMyAvatar()->prepareAvatarEntityDataForReload();
-    // Clear the entities and their renderables
-    getEntities()->clear();
-
-    //DependencyManager::get<AssetClient>()->clearCache();
-    //DependencyManager::get<ScriptCache>()->clearCache();
-
-    // Clear all the resource caches
-    //DependencyManager::get<ResourceCacheSharedItems>()->clear();
-    DependencyManager::get<AnimationCache>()->refreshAll();
-    DependencyManager::get<SoundCache>()->refreshAll();
-    DependencyManager::get<MaterialCache>()->refreshAll();
-    DependencyManager::get<ModelCache>()->refreshAll();
-    ShaderCache::instance().refreshAll();
-    DependencyManager::get<TextureCache>()->refreshAll();
-    DependencyManager::get<recording::ClipCache>()->refreshAll();
-
-    DependencyManager::get<NodeList>()->reset("Reloading resources");  // Force redownload of .fst models
-    // DependencyManager::get<ScriptEngines>()->reloadAllScripts(); // can we make a version that doesn't reload client UI scripts?
-    //getOffscreenUI()->clearCache();
-
-    //DependencyManager::get<Keyboard>()->createKeyboard();
-
-    //getMyAvatar()->resetFullAvatarURL();
+// Reload a world without clearing the caches. 
+void Application::rejoin() { 
+    DependencyManager::get<AddressManager>()->rejoin();
 }
 
 
@@ -6982,7 +6969,9 @@ void Application::queryOctree(
     }
 
     const bool isModifiedQuery = !_physicsEnabled;
-    if (isModifiedQuery) {
+    
+    // if (isModifiedQuery) {
+    if (true) {
         if (!_octreeProcessor.safeLandingIsActive()) {
             // don't send the octreeQuery until SafeLanding knows it has started
             return;
@@ -6992,7 +6981,7 @@ void Application::queryOctree(
 
         ConicalViewFrustum sphericalView;
         AABox box = getMyAvatar()->getGlobalBoundingBox();
-        float radius = glm::max(INITIAL_QUERY_RADIUS, 25000.0f);// was 0.5 * glm::length(box.getDimensions()));
+        float radius = INITIAL_QUERY_RADIUS; //glm::max(INITIAL_QUERY_RADIUS, 350);//0.5 * glm::length(box.getDimensions())); 
         sphericalView.setPositionAndSimpleRadius(box.calcCenter(), radius);
 
         //if (interstitialModeEnabled) {
@@ -7012,7 +7001,7 @@ void Application::queryOctree(
                // _octreeQuery->static_cast<EntityNodeData*>(node->getLinkedData()); //setShouldForceFullScene(true);
                 _octreeQuery.clearConicalViews();                     // TIVOLI go frustumless
                 _octreeQuery.setJSONParameters(queryJSONParameters);  // TIVOLI force ancestors and descendents
-                //_octreeQuery.setConicalViews({ sphericalView, farView });
+               // _octreeQuery.setConicalViews({ sphericalView, farView });
             }
         } else {
             _octreeQuery.setConicalViews({ sphericalView });
@@ -7205,7 +7194,8 @@ void Application::updateWindowTitle() const {
 
     const QString title = (
         (status.isEmpty() ? "" : status + " - ") +
-        (username.isEmpty() ? "" : username + " @ ") + 
+        username +
+        (username.isEmpty() || currentWorldName.isEmpty() ? "" : " @ ")  +
         currentWorldName + " - " +
         "Tivoli Cloud VR " + buildVersion
     );

@@ -66,7 +66,7 @@ EntityTree::~EntityTree() {
 }
 
 void EntityTree::setEntityScriptSourceWhitelist(const QString& entityScriptSourceWhitelist) { 
-    _entityScriptSourceWhitelist = entityScriptSourceWhitelist.split(',', QString::SkipEmptyParts);
+    _entityScriptSourceWhitelist = entityScriptSourceWhitelist.split(',', Qt::SkipEmptyParts);
 }
 
 
@@ -330,13 +330,26 @@ bool EntityTree::updateEntity(EntityItemPointer entity, const EntityItemProperti
     EntityItemProperties properties = origProperties;
 
     bool allowLockChange;
+    bool allowAnyRez;
     QUuid senderID;
     if (senderNode.isNull()) {
         auto nodeList = DependencyManager::get<NodeList>();
         allowLockChange = nodeList->isAllowedEditor();
+        allowAnyRez = (
+            nodeList->getThisNodeCanRez() || 
+            nodeList->getThisNodeCanRezCertified() || 
+            nodeList->getThisNodeCanRezTmp() || 
+            nodeList->getThisNodeCanRezTmpCertified() 
+        ); 
         senderID = nodeList->getSessionUUID();
     } else {
         allowLockChange = senderNode->isAllowedEditor();
+        allowAnyRez = (
+            senderNode->getCanRez() || 
+            senderNode->getCanRezCertified() ||
+            senderNode->getCanRezTmp() || 
+            senderNode->getCanRezTmpCertified()
+        );
         senderID = senderNode->getUUID();
     }
 
@@ -459,8 +472,37 @@ bool EntityTree::updateEntity(EntityItemPointer entity, const EntityItemProperti
         }
         UpdateEntityOperator theOperator(getThisPointer(), containingElement, entity, newQueryAACube);
         recurseTreeWithOperator(&theOperator);
-        if (entity->setProperties(properties)) {
-            emit editingEntityPointer(entity);
+
+        // avatar entities can be set to any property
+        // this is somewhat malicious but it's only as long as the user is in world
+        if (allowAnyRez || entity->isAvatarEntity() || entity->isLocalEntity()) {
+            if (entity->setProperties(properties)) {
+                emit editingEntityPointer(entity);
+            }
+        } else {
+            // if not allowed to rez but entity is grabbable or equippable, only allow simulation properties
+            if (entity->getGrabProperties().getGrabbable() || entity->getGrabProperties().getEquippable()) {
+                #define prop properties
+                EntityItemProperties tmp;
+                
+                if (prop.simulationOwnerChanged()) tmp.setSimulationOwner(prop.getSimulationOwner());
+                if (prop.positionChanged()) tmp.setPosition(prop.getPosition());
+                if (prop.rotationChanged()) tmp.setRotation(prop.getRotation());
+                if (prop.velocityChanged()) tmp.setVelocity(prop.getVelocity());
+                if (prop.angularVelocityChanged()) tmp.setAngularVelocity(prop.getAngularVelocity());
+                if (prop.accelerationChanged()) tmp.setAcceleration(prop.getAcceleration());
+                if (prop.parentIDChanged()) tmp.setParentID(prop.getParentID());
+                if (prop.parentJointIndexChanged()) tmp.setParentJointIndex(prop.getParentJointIndex());
+
+                if (prop.lastEditedByChanged()) tmp.setLastEditedBy(prop.getLastEditedBy());
+                tmp.setLastEdited(prop.getLastEdited());
+               
+                if (entity->setProperties(tmp)) {
+                    emit editingEntityPointer(entity);
+                }
+            } else {
+                return false;
+            }
         }
 
         // if the entity has children, run UpdateEntityOperator on them.  If the children have children, recurse
@@ -533,7 +575,7 @@ bool EntityTree::updateEntity(EntityItemPointer entity, const EntityItemProperti
     return true;
 }
 
-EntityItemPointer EntityTree::addEntity(const EntityItemID& entityID, const EntityItemProperties& properties, bool isClone) {
+EntityItemPointer EntityTree::addEntity(const EntityItemID& entityID, const EntityItemProperties& properties, bool isClone, const bool isImport) {
     EntityItemProperties props = properties;
 
     auto nodeList = DependencyManager::get<NodeList>();
@@ -544,7 +586,8 @@ EntityItemPointer EntityTree::addEntity(const EntityItemID& entityID, const Enti
 
     if (properties.getEntityHostType() == entity::HostType::DOMAIN && getIsClient() &&
         !nodeList->getThisNodeCanRez() && !nodeList->getThisNodeCanRezTmp() &&
-        !nodeList->getThisNodeCanRezCertified() && !nodeList->getThisNodeCanRezTmpCertified() && !_serverlessDomain && !isClone) {
+        !nodeList->getThisNodeCanRezCertified() && !nodeList->getThisNodeCanRezTmpCertified() && 
+        !_serverlessDomain && !isClone && !isImport) {
         return nullptr;
     }
 
@@ -1970,15 +2013,9 @@ int EntityTree::processEditPacketData(ReceivedMessage& message, const unsigned c
                 //bool allowed = (!isPhysics && senderNode->isAllowedEditor()) || filterProperties(existingEntity, properties, properties, wasChanged, filterType);
 
                 bool allowed = (
-                    !isPhysics &&
-                    senderNode->isAllowedEditor() &&
-                    (
-                        senderNode->getCanRez() ||
-                        senderNode->getCanRezTmp() ||
-                        senderNode->getCanRezCertified() ||
-                        senderNode->getCanRezTmpCertified()
-                    )
-                ) || filterProperties(existingEntity, properties, properties, wasChanged, filterType);
+                    (!isPhysics && senderNode->isAllowedEditor()) ||
+                    filterProperties(existingEntity, properties, properties, wasChanged, filterType)
+                );
                 if (!allowed) {
                     // the update failed and we need to convey that fact to the sender
                     // our method is to re-assert the current properties and bump the lastEdited timestamp
@@ -2652,11 +2689,12 @@ QByteArray EntityTree::remapActionDataIDs(QByteArray actionData, QHash<EntityIte
 }
 
 QVector<EntityItemID> EntityTree::sendEntities(EntityEditPacketSender* packetSender, EntityTreePointer localTree,
-                                               float x, float y, float z) {
+                                               const QString& entityHostType, float x, float y, float z) {
     SendEntitiesOperationArgs args;
     args.ourTree = this;
     args.otherTree = localTree;
     args.root = glm::vec3(x, y, z);
+    args.entityHostType = entityHostType;
     // If this is called repeatedly (e.g., multiple pastes with the same data), the new elements will clash unless we
     // use new identifiers.  We need to keep a map so that we can map parent identifiers correctly.
     QHash<EntityItemID, EntityItemID> map;
@@ -2745,6 +2783,11 @@ bool EntityTree::sendEntitiesOperation(const OctreeElementPointer& element, void
         EntityItemID oldID = item->getEntityItemID();
         EntityItemID newID = getMapped(oldID);
         EntityItemProperties properties = item->getProperties();
+
+        properties.setEntityHostTypeFromString(args->entityHostType);
+        if (properties.getEntityHostType() == entity::HostType::AVATAR) {
+            properties.setOwningAvatarID(AVATAR_SELF_ID);
+        }
 
         EntityItemID oldParentID = properties.getParentID();
         if (oldParentID.isInvalidID()) {  // no parent
@@ -2921,7 +2964,7 @@ void convertGrabUserDataToProperties(EntityItemProperties& properties) {
 }
 
 
-bool EntityTree::readFromMap(QVariantMap& map) {
+bool EntityTree::readFromMap(QVariantMap& map, const bool isImport) {
     // These are needed to deal with older content (before adding inheritance modes)
     int contentVersion = map["Version"].toInt();
 
@@ -3091,7 +3134,7 @@ bool EntityTree::readFromMap(QVariantMap& map) {
             }
         }
 
-        EntityItemPointer entity = addEntity(entityItemID, properties);
+        EntityItemPointer entity = addEntity(entityItemID, properties, isImport);
         if (!entity) {
             qCDebug(entities) << "adding Entity failed:" << entityItemID << properties.getType();
             success = false;

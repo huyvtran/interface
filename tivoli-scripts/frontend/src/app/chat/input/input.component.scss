@@ -1,0 +1,39 @@
+.input {
+	width: 100%;
+	padding: 8px 12px;
+	background-color: rgba(#1d1f21, 0.9);
+	color: #fff;
+	font-family: "Roboto";
+	overflow-x: hidden;
+	overflow-y: auto;
+	border-radius: 0 0 8px 8px;
+
+	&:focus {
+		outline: none;
+	}
+}
+
+.button {
+	position: absolute;
+	top: 0.333em;
+	bottom: 0;
+	height: 1.333em;
+
+	&.emoji {
+		right: 0.333em;
+		cursor: pointer;
+
+		opacity: 0.5;
+		filter: grayscale(1);
+		&:hover {
+			opacity: 1;
+			filter: grayscale(0);
+		}
+	}
+}
+
+.emoji-menu {
+	position: absolute;
+	bottom: calc(100% + 8px);
+	right: 0;
+}

@@ -74,13 +74,27 @@ If cmake gives you the same error message repeatedly after the build fails, try 
 
 ## Variables
 
-Any variables that need to be set for CMake can be set as environement variables or passed directly with a `-D` flag appended to the `cmake ..` command.
+Any variables that need to be set for CMake can be set as environment variables or passed directly with a `-D` flag appended to the `cmake ..` command.
 
 For example, to pass the `QT_CMAKE_PREFIX_PATH` variable (if not using our version of Qt) during build file generation without using an environment variable:
 
 ```bash
     cmake .. -DQT_CMAKE_PREFIX_PATH=/path/to/qt/lib/cmake
 ```
+
+## Load QML from resources folder, not `resources.rcc`
+
+When working on QML, you'll need a way to easily see the changes you're making.
+
+-   Make sure you're making a **dev build** (`cmake ..` without any production variables). You can verify this in `build/includes/BuildInfo.h` with `VERSION = "dev"`.
+
+-   When launching interface, add `HIFI_USE_SOURCE_TREE_RESOURCES=1` environment variable. You can add this in the launcher under **Developer > Additional environment variables**.
+
+-   Once in-world, you can test your QML and press **Edit > Clear Cache & Reload (very slow)** to reload.
+
+## Other runtime environment variables
+
+-   `HIFI_SHOW_DEVELOPER_CRASH_MENU` - enables menu to test crashing
 
 ## Optional components
 
@@ -97,3 +111,26 @@ The following build options can be used when running CMake
 
 -   `USE_GLES`
 -   `DISABLE_UI`
+
+## Running a domain server locally for testing
+
+We recommend using the `pm2` process manager
+
+-   Install Node.js
+-   `npm i -g pm2`
+
+Enter the root directory of this repo and run:
+
+```bash
+pm2 start ecosystem.config.js
+# here are extra commands
+pm2 ls
+pm2 logs 0 # id of the process found in ls
+pm2 logs 0 --lines 999
+pm2 stop 0
+pm2 start 0
+pm2 restart 0
+pm2 kill
+```
+
+**Don't forget to run `pm2 kill`** when you're finished or it'll keep running in the background!

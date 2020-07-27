@@ -48,7 +48,7 @@ WebEngineView {
         permissionPopupBackground.securityOrigin = securityOrigin;
         permissionPopupBackground.feature = feature;
 
-        permissionPopupBackground.visible = true;
+        permissionPopupBackground.visible = feature != WebEngineView.MediaAudioCapture;
     }
 
     ControlsUit.PermissionPopupBackground {
@@ -57,5 +57,9 @@ WebEngineView {
         onSendPermission: {
             root.grantFeaturePermission(securityOrigin, feature, shouldGivePermission);
         }
+    }
+
+    onContextMenuRequested: {
+        request.accepted = true;
     }
 }

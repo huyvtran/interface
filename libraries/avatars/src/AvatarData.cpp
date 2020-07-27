@@ -47,6 +47,7 @@
 #include "AvatarTraits.h"
 #include "ClientTraitsHandler.h"
 #include "ResourceRequestObserver.h"
+#include "AccountManager.h"
 
 //#define WANT_DEBUG
 
@@ -135,7 +136,7 @@ void AvatarData::randomizeDefaultFullAvatarModelUrl() {
     // TODO: this shouldnt have to live on the metaverse.
     // the idea is that the default avatar is random for each person.
     // on the server, it will set the albedo in the fst for the top and hair
-    _defaultFullAvatarModelUrl = NetworkingConstants::METAVERSE_SERVER_URL();
+    _defaultFullAvatarModelUrl = QUrl(NetworkingConstants::METAVERSE_SERVER_URL().toString());
     _defaultFullAvatarModelUrl.setPath(
         "/api/lynden/" +
         QString::number(usecTimestampNow()) +
@@ -2068,9 +2069,9 @@ void AvatarData::processAvatarIdentity(QDataStream& packetStream, bool& identity
 
 #ifdef WANT_DEBUG
         qCDebug(avatars) << __FUNCTION__
-            << "identity.uuid:" << identity.uuid
             << "identity.displayName:" << identity.displayName
-            << "identity.sessionDisplayName:" << identity.sessionDisplayName;
+            << "identity.sessionDisplayName:" << identity.sessionDisplayName
+            << "identity.identityFlags:" << identity.identityFlags;
     } else {
 
         qCDebug(avatars) << "Refusing to process identity for" << uuidStringWithoutCurlyBraces(avatarSessionID) << "since"
@@ -2331,7 +2332,14 @@ void AvatarData::setSkeletonModelURL(const QUrl& skeletonModelURL) {
 }
 
 void AvatarData::setDisplayName(const QString& displayName) {
-    _displayName = displayName;
+    // force display name to username for now until things are better implemented
+    const auto accountManager = DependencyManager::get<AccountManager>();
+    if (accountManager && accountManager->getAccountInfo().getUsername().isEmpty() == false) {
+        _displayName = QString(accountManager->getAccountInfo().getUsername());
+    } else {
+        _displayName = "";
+    }
+
     _sessionDisplayName = "";
 
     qCDebug(avatars) << "Changing display name for avatar to" << displayName;
@@ -2420,6 +2428,10 @@ void AvatarData::detachAll(const QString& modelURL, const QString& jointName) {
 
 int AvatarData::sendAvatarDataPacket(bool sendAll) {
     auto nodeList = DependencyManager::get<NodeList>();
+    auto avatarMixer = nodeList->soloNodeOfType(NodeType::AvatarMixer);
+    if (!avatarMixer || !avatarMixer->getActiveSocket()) {
+        return 0;
+    }
 
     // about 2% of the time, we send a full update (meaning, we transmit all the joint data), even if nothing has changed.
     // this is to guard against a joint moving once, the packet getting lost, and the joint never moving again.
@@ -2452,13 +2464,17 @@ int AvatarData::sendAvatarDataPacket(bool sendAll) {
     avatarPacket->write(avatarByteArray);
     auto packetSize = avatarPacket->getWireSize();
 
-    nodeList->broadcastToNodes(std::move(avatarPacket), NodeSet() << NodeType::AvatarMixer);
+    nodeList->sendPacket(std::move(avatarPacket), *avatarMixer);
 
     return packetSize;
 }
 
 int AvatarData::sendIdentityPacket() {
     auto nodeList = DependencyManager::get<NodeList>();
+    auto avatarMixer = nodeList->soloNodeOfType(NodeType::AvatarMixer);
+    if (!avatarMixer || !avatarMixer->getActiveSocket()) {
+        return 0;
+    }
 
     if (_identityDataChanged) {
         // if the identity data has changed, push the sequence number forwards
@@ -2466,15 +2482,10 @@ int AvatarData::sendIdentityPacket() {
     }
     QByteArray identityData = identityByteArray();
 
-    auto packetList = NLPacketList::create(PacketType::AvatarIdentity, QByteArray(), true, true);
-    packetList->write(identityData);
-    nodeList->eachMatchingNode(
-        [](const SharedNodePointer& node)->bool {
-            return node->getType() == NodeType::AvatarMixer && node->getActiveSocket();
-        },
-        [&](const SharedNodePointer& node) {
-            nodeList->sendPacketList(std::move(packetList), *node);
-    });
+    auto packet = NLPacket::create(PacketType::AvatarIdentity, -1, true);
+    packet->write(identityData);
+
+    nodeList->sendPacket(std::move(packet), *avatarMixer);
 
     _identityDataChanged = false;
     return identityData.size();

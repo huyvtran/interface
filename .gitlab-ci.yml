@@ -2,15 +2,15 @@ stages:
     - build
     - package
     - deploy
+    - finalize
 
 .production:
     only:
         - /^[0-9]+?\.[0-9]+?\.[0-9]+?$/i
-    environment:
-        name: production
 
 include:
     - local: .gitlab/build/linux.gitlab-ci.yml
     - local: .gitlab/build/windows.gitlab-ci.yml
     - local: .gitlab/build/macos.gitlab-ci.yml
     - local: .gitlab/deploy.gitlab-ci.yml
+    - local: .gitlab/finalize.gitlab-ci.yml

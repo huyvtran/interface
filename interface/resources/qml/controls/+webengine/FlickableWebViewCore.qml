@@ -137,7 +137,7 @@ Item {
             if (webViewCoreUserAgent !== undefined) {
                 webViewCore.profile.httpUserAgent = webViewCoreUserAgent
             } else {
-                webViewCore.profile.httpUserAgent += " (HighFidelityInterface)";
+                webViewCore.profile.httpUserAgent += " TivoliCloudVR"; // TODO: add /<version>
             }
             // Ensure the JS from the web-engine makes it to our logging
             webViewCore.javaScriptConsoleMessage.connect(function(level, message, lineNumber, sourceID) {
@@ -154,7 +154,7 @@ Item {
             permissionPopupBackground.securityOrigin = securityOrigin;
             permissionPopupBackground.feature = feature;
 
-            permissionPopupBackground.visible = true;
+            permissionPopupBackground.visible = feature != WebEngineView.MediaAudioCapture;
         }
 
         //disable popup

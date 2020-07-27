@@ -30,8 +30,8 @@
 #include "UserActivityLogger.h"
 #include "udt/PacketHeaders.h"
 
-const QString DEFAULT_HIFI_ADDRESS = "199fa1e7-a132-4f4c-88b2-28ca9f9f2955"; // silence
-const QString DEFAULT_HOME_ADDRESS = "199fa1e7-a132-4f4c-88b2-28ca9f9f2955";
+const QString DEFAULT_HIFI_ADDRESS = "7def9d04-b4a4-47b2-892f-43f7eb82caf7"; // squirrel nut cafe
+const QString DEFAULT_HOME_ADDRESS = "7def9d04-b4a4-47b2-892f-43f7eb82caf7";
 const QString REDIRECT_HIFI_ADDRESS = "file:///~/serverless/redirect.json";
 const QString ADDRESS_MANAGER_SETTINGS_GROUP = "AddressManager";
 const QString SETTINGS_CURRENT_ADDRESS_KEY = "address";
@@ -221,6 +221,7 @@ QString AddressManager::currentFacingPath() const {
         return QString();
     }
 }
+
 
 const JSONCallbackParameters& AddressManager::apiCallbackParameters() {
     static bool hasSetupParameters = false;
@@ -873,6 +874,7 @@ bool AddressManager::setDomainInfo(const QUrl& domainURL, LookupTrigger trigger)
     return emitHostChanged;
 }
 
+
 void AddressManager::goToUser(const QString& username, bool shouldMatchOrientation) {
     QString formattedUsername = QUrl::toPercentEncoding(username);
 
@@ -891,6 +893,15 @@ void AddressManager::goToUser(const QString& username, bool shouldMatchOrientati
 
 bool AddressManager::canGoBack() const {
     return (_backStack.size() > 0);
+}
+
+void AddressManager::rejoin() {
+        LookupTrigger trigger = LookupTrigger::Internal;
+        QUrl urlToRefresh = currentAddress();//_lastVisitedURL;
+        handleUrl(EMPTY_HIFI_ADDRESS, trigger); 
+        QTimer::singleShot(2000, [=](){
+            handleUrl(urlToRefresh , trigger); 
+        });
 }
 
 void AddressManager::refreshPreviousLookup() {

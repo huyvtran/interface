@@ -92,7 +92,7 @@ class StateController;
 
 static const QString RUNNING_MARKER_FILENAME = "Interface.running";
 static const QString SCRIPTS_SWITCH = "scripts";
-static const QString HIFI_NO_LOGIN_COMMAND_LINE_KEY = "no-login-suggestion";
+// static const QString HIFI_NO_LOGIN_COMMAND_LINE_KEY = "no-login-suggestion";
 
 class Application;
 #if defined(qApp)
@@ -393,7 +393,7 @@ signals:
     void awayStateWhenFocusLostInVRChanged(bool enabled);
 
 public slots:
-    QVector<EntityItemID> pasteEntities(float x, float y, float z);
+    QVector<EntityItemID> pasteEntities(const QString& entityHostType, float x, float y, float z);
     bool exportEntities(const QString& filename, const QVector<QUuid>& entityIDs, const glm::vec3* givenOffset = nullptr);
     bool exportEntities(const QString& filename, float x, float y, float z, float scale);
     bool importEntities(const QString& url, const bool isObservable = true, const qint64 callerId = -1);
@@ -454,7 +454,7 @@ public slots:
     void resetPhysicsReadyInformation();
 
     void reloadResourceCaches();
-    void refreshScene();
+    void rejoin();
 
     void updateHeartbeat() const;
 
@@ -695,8 +695,8 @@ private:
     Setting::Handle<bool> _miniTabletEnabledSetting;
     Setting::Handle<bool> _keepLogWindowOnTop{ "keepLogWindowOnTop", false };
     // TIVOLI SPECIFIC
-    Setting::Handle<bool> _loadCompleteEntityTreeSetting;  // TIVOLI new feature
-    Setting::Handle<bool> _bypassPrioritySortingSetting; // TIVOLI new feature
+    Setting::Handle<bool> _loadCompleteEntityTreeSetting; 
+    Setting::Handle<bool> _bypassPrioritySortingSetting;
 
     float _scaleMirror;
     float _mirrorYawOffset;

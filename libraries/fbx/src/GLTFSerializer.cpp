@@ -1188,6 +1188,11 @@ bool GLTFSerializer::buildGeometry(HFMModel& hfmModel, const hifi::VariantHash& 
 
             int indicesAccessorIdx = primitive.indices;
 
+            if (indicesAccessorIdx < 0 || indicesAccessorIdx > _file.accessors.size() - 1) {
+                qWarning(modelformat) << "Indices accessor index is out of bounds for model " << _url;
+                return false;
+            }
+
             GLTFAccessor& indicesAccessor = _file.accessors[indicesAccessorIdx];
 
             // Buffers
@@ -1224,6 +1229,12 @@ bool GLTFSerializer::buildGeometry(HFMModel& hfmModel, const hifi::VariantHash& 
 
             for(auto &key : keys) {
                 int accessorIdx = primitive.attributes.values[key];
+
+                if (accessorIdx > _file.accessors.size()) {
+                    qWarning(modelformat) << "Accessor index is out of bounds for model " << _url;
+                    continue;
+                }
+
                 GLTFAccessor& accessor = _file.accessors[accessorIdx];
                 const auto vertexAttribute = GLTFVertexAttribute::fromString(key);
                 switch (vertexAttribute) {
@@ -1752,7 +1763,7 @@ void GLTFSerializer::setHFMMaterial(HFMMaterial& hfmMat, const GLTFMaterial& mat
         hfmMat.isPBSMaterial = true;
 
         if (material.pbrMetallicRoughness.defined["metallicFactor"]) {
-            hfmMat.metallic = material.pbrMetallicRoughness.metallicFactor;
+            hfmMat._material->setMetallic(material.pbrMetallicRoughness.metallicFactor);
         }
         if (material.pbrMetallicRoughness.defined["baseColorTexture"]) {
             hfmMat.opacityTexture = getHFMTexture(_file.textures[material.pbrMetallicRoughness.baseColorTexture]);

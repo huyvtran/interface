@@ -425,8 +425,8 @@
                 intensity: 1.0,
                 direction: {
                     x: 0.0,
-                    y: -0.70710676908493, // 45 degrees
-                    z: 0.7071067690849304
+                    y: -0.8674231767654419, // 60 degrees
+                    z: 0.49757108092308044
                 },
                 castShadows: true
             },
@@ -553,6 +553,9 @@
             isSpotlight: false,
             exponent: 1.0,
             cutoff: 75.0
+        },
+        Material: {
+            name: "Material"
         }
     };
 
@@ -1011,6 +1014,11 @@
             addButton("importEntitiesButton", function() {
                 Window.browseChanged.connect(onFileOpenChanged);
                 Window.browseAsync("Select Model to Import", "", "*.json");
+            });
+
+            addButton("importEntitiesFromURLButton", function() {
+                Window.promptTextChanged.connect(onPromptTextChanged);
+                Window.promptAsync("URL of SVO to import", "");
             });
 
             addButton("openAssetBrowserButton", function() {

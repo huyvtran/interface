@@ -31,10 +31,8 @@ class QScriptContext;
  * @class OverlayWindow
  * @param {string|OverlayWindow.Properties} [titleOrProperties="WebWindow"] - The window's title or initial property values.
  * @param {string} [source] - The source of the QML to display. Not used unless the first parameter is the window title.
- * @param {number} [width=0] - The width of the window interior, in pixels. Not used unless the first parameter is the window
- *     title.
- * @param {number} [height=0] - The height of the window interior, in pixels. Not used unless the first parameter is the
- *     window title.
+ * @param {number} [width=0] - The width of the window interior, in pixels. Not used unless the first parameter is the window title.
+ * @param {number} [height=0] - The height of the window interior, in pixels. Not used unless the first parameter is the window title.
  *
  * @hifi-interface
  * @hifi-client-entity
@@ -83,17 +81,30 @@ public slots:
     /**jsdoc
      * Gets whether the window is shown or hidden.
      * @function OverlayWindow.isVisible
-     * @returns {boolean} code>true</code> if the window is shown, <code>false</code> if it is hidden.
+     * @returns {boolean} <code>true</code> if the window is shown, <code>false</code> if it is hidden.
      */
     bool isVisible();
 
     /**jsdoc
      * Shows or hides the window.
      * @function OverlayWindow.setVisible
-     * @param {boolean} visible - code>true</code> to show the window, <code>false</code> to hide it.
+     * @param {boolean} visible - <code>true</code> to show the window, <code>false</code> to hide it.
      */
     void setVisible(bool visible);
 
+    /**jsdoc
+     * Gets whether the window is frameless or not.
+     * @function OverlayWindow.isFrameless
+     * @returns {boolean} <code>true</code> if the window has no frame, <code>false</code> if it does.
+     */
+    bool isFrameless();
+
+    /**jsdoc
+     * Shows or hides the frame of the window.
+     * @function OverlayWindow.setFrameless
+     * @param {boolean} frameless - <code>true</code> to remove the frame, <code>false</code> to show it.
+     */
+    void setFrameless(bool frameless);
 
     /**jsdoc
      * Gets the position of the window.
@@ -116,7 +127,6 @@ public slots:
      * @param {number} y - The y position of the window, in pixels.
      */
     void setPosition(int x, int y);
-
 
     /**jsdoc
      * Gets the size of the window interior.
@@ -146,6 +156,27 @@ public slots:
      * @param {string} title - The window title.
      */
     void setTitle(const QString& title);
+
+    /**jsdoc
+     * Sets the window focus.
+     * @function OverlayWindow.setFocus
+     * @param {boolean} focus - The window focus.
+     */
+    void setFocus(bool focus);
+
+    /**jsdoc
+     * Enables or disables the window
+     * @function OverlayWindow.setEnabled
+     * @param {boolean} enabled - <code>true</code> to allow all input, <code>false</code> to disable.
+     */
+    void setEnabled(bool enabled);
+
+    /**jsdoc
+     * Gets whether the window is enabled or not
+     * @function OverlayWindow.isEnabled
+     * @returns {boolean} <code>true</> if the window allows all input, <code>false</code> if not.
+     */
+    bool isEnabled();
 
     /**jsdoc
      * Raises the window to the top.
