@@ -249,8 +249,8 @@ endif()
         tripletForBuildTypePath = os.path.join(self.path, 'triplets', self.getTripletWithBuildType(triplet) + '.cmake')
         shutil.copy(tripletPath, tripletForBuildTypePath)
         
-        # with open(tripletForBuildTypePath, "a") as file:
-        #     file.write("set(VCPKG_BUILD_TYPE " + self.vcpkgBuildType + ")\n")
+        with open(tripletForBuildTypePath, "a") as file:
+            file.write("set(VCPKG_BUILD_TYPE " + self.vcpkgBuildType + ")\n")
 
         #     # openssl needs to link dynamically or it'll be incompatible with webrtc
         #     if platform.system() == "Darwin":
