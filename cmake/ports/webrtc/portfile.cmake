@@ -1,5 +1,5 @@
 include(vcpkg_common_functions)
-set(WEBRTC_VERSION 84.6.0)
+set(WEBRTC_VERSION 85.4183.2.0)
 set(MASTER_COPY_SOURCE_PATH ${CURRENT_BUILDTREES_DIR}/src)
 
 set(WEBRTC_DOWNLOAD_URL https://github.com/crow-misia/libwebrtc-bin/releases/download/${WEBRTC_VERSION})
@@ -10,24 +10,32 @@ elseif (WIN32)
     vcpkg_download_distfile(
         WEBRTC_SOURCE_ARCHIVE
         URLS ${WEBRTC_DOWNLOAD_URL}/libwebrtc-win-x64.7z
-        SHA512 938e3eade4e184363c136e02de13e0458732555cbcaab67d7b09a0a8f84256942248289236f059dd065316a7b0d9bce34263ed2f28f1d7fb8f9945b86d4ffee3
+        SHA512 35ba009502041f37d017f5a8cbbe42686072401480817c4f45f5684f1e8f2108ea850579a08c0e347a392e43472c567ba6980773ed77ce8069baf1c1f6ef3842
         FILENAME libwebrtc-win-x64.7z
     )
 elseif (APPLE)
     vcpkg_download_distfile(
         WEBRTC_SOURCE_ARCHIVE
         URLS ${WEBRTC_DOWNLOAD_URL}/libwebrtc-macox-x64.tar.xz
-        SHA512 f66b15d098a2b4401ee65ed9146b5b4fb4906fef085c853bce38cb422b198b90d49e1fbc597e0816cf4436451bd6817e98579f44ca16bc500de78bb1d08ee284
+        SHA512 35ba009502041f37d017f5a8cbbe42686072401480817c4f45f5684f1e8f2108ea850579a08c0e347a392e43472c567ba6980773ed77ce8069baf1c1f6ef3842
         FILENAME libwebrtc-macox-x64.tar.xz
     )
-else ()
-    # else Linux desktop
-    vcpkg_download_distfile(
-        WEBRTC_SOURCE_ARCHIVE
-        URLS ${WEBRTC_DOWNLOAD_URL}/libwebrtc-linux-x64.tar.xz
-        SHA512 df71748b8bc78d776494d46e99f06438b9917c8ee39b521f1506b6de609b1af1f3019eba22cfc4f5da14255dc70ec26acbb6a7878899ee8758809a9759af3904
-        FILENAME libwebrtc-linux-x64.tar.xz
-    )
+else () # Linux
+    if (VCPKG_TARGET_ARCHITECTURE STREQUAL "x64")
+        vcpkg_download_distfile(
+            WEBRTC_SOURCE_ARCHIVE
+            URLS ${WEBRTC_DOWNLOAD_URL}/libwebrtc-linux-x64.tar.xz
+            SHA512 370ad21f2aa8c810ff81fefb4a8a024500198bfd7ce751b11dbb58b8d066ccc59d4dc0d2ad992a5f3ddbed5f39a1fd4e2e9536d2e4a1acc4d6d704165f4625d5
+            FILENAME libwebrtc-linux-x64.tar.xz
+        )
+    elseif (VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
+        vcpkg_download_distfile(
+            WEBRTC_SOURCE_ARCHIVE
+            URLS ${WEBRTC_DOWNLOAD_URL}/libwebrtc-linux-arm64.tar.xz
+            SHA512 370ad21f2aa8c810ff81fefb4a8a024500198bfd7ce751b11dbb58b8d066ccc59d4dc0d2ad992a5f3ddbed5f39a1fd4e2e9536d2e4a1acc4d6d704165f4625d5
+            FILENAME libwebrtc-linux-x64.tar.xz
+        )
+    endif ()
 endif ()
 
 vcpkg_extract_source_archive(${WEBRTC_SOURCE_ARCHIVE})
