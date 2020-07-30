@@ -239,6 +239,9 @@ add_crashpad()
 target_breakpad()
 target_json()
 
+# webrtc is a static library which needs to be linked to a non-static library
+target_webrtc()
+
 # perform standard include and linking for found externals
 foreach(EXTERNAL ${OPTIONAL_EXTERNALS})
 

@@ -126,5 +126,3 @@ if (APPLE)
     set(CMAKE_OSX_SYSROOT ${_OSX_DESIRED_SDK_PATH}/MacOSX${OSX_SDK}.sdk)
   endif ()
 endif ()
-
-add_definitions(-DWEBRTC_APM_DEBUG_DUMP=0)

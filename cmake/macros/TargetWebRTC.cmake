@@ -15,12 +15,18 @@ macro(TARGET_WEBRTC)
         # select_library_configurations(WEBRTC)
     else()
         set(WEBRTC_INCLUDE_DIRS "${VCPKG_INSTALL_ROOT}/include/webrtc")
+        message("WEBRTC_INCLUDE_DIRS ${WEBRTC_INCLUDE_DIRS}")
         target_include_directories(${TARGET_NAME} SYSTEM PUBLIC ${WEBRTC_INCLUDE_DIRS})
-        find_library(WEBRTC_LIBRARY_RELEASE webrtc PATHS ${VCPKG_INSTALL_ROOT}/lib NO_DEFAULT_PATH)
-        find_library(WEBRTC_LIBRARY_DEBUG webrtc PATHS ${VCPKG_INSTALL_ROOT}/debug/lib NO_DEFAULT_PATH)
-        select_library_configurations(WEBRTC)
-        target_link_libraries(${TARGET_NAME} ${WEBRTC_LIBRARIES})
+
+        # cant easily link a static library to a static library
+        get_target_property(target_type ${TARGET_NAME} TYPE)
+        if (NOT target_type STREQUAL STATIC_LIBRARY)
+            find_library(WEBRTC_LIBRARY_RELEASE webrtc PATHS ${VCPKG_INSTALL_ROOT}/lib NO_DEFAULT_PATH)
+            find_library(WEBRTC_LIBRARY_DEBUG webrtc PATHS ${VCPKG_INSTALL_ROOT}/debug/lib NO_DEFAULT_PATH)
+            select_library_configurations(WEBRTC)
+            target_link_libraries(${TARGET_NAME} ${WEBRTC_LIBRARIES})
+        endif()
+
+        target_compile_definitions(${TARGET_NAME} PUBLIC WEBRTC_APM_DEBUG_DUMP=0)
     endif()
-
-
 endmacro()
